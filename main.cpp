@@ -39,28 +39,34 @@ std::string get_element_text_value(GumboNode *node) {
 	return ret;
 }
 
-void loop_recursively(GumboNode *node, const std::function<bool(GumboNode*)> &func) {
+bool loop_recursively(GumboNode *node, const std::function<bool(GumboNode*)> &func) {
 	if (node != nullptr) {
 		if (node->type == GumboNodeType::GUMBO_NODE_ELEMENT) {
 			for (int i = 0; i < node->v.element.children.length; i++) {
-				bool keep_looping = func(node);
-				if (!keep_looping) return;
-				loop_recursively((GumboNode*)node->v.element.children.data[i], func);
+				if (!func(node)) return false;
+				if (!loop_recursively((GumboNode*)node->v.element.children.data[i], func)) return false;
 			}
 		}
 	}
+	return true;
 }
 
 bool get_current_value(GumboNode *node) {
+	static bool in_intraday_price = false;
 	if (node->type == GumboNodeType::GUMBO_NODE_ELEMENT) {
 		GumboAttribute *attribute = gumbo_get_attribute(&node->v.element.attributes, "class");
 		if (attribute != nullptr) {
-			if (strcmp(attribute->value, CURRENT_VALUE_CLASS_NAME.c_str()) == 0) {
-				std::string text = get_element_text_value(node);
-				if (!text.empty()) {
-					std::cout << "Stock current value: " << text << std::endl;
-					return false;
+			if (std::string(attribute->value) != "intraday__price ") {	
+				if (std::string(attribute->value) == CURRENT_VALUE_CLASS_NAME && in_intraday_price) {
+					in_intraday_price = false;
+					std::string text = get_element_text_value(node);
+					if (!text.empty()) {
+						std::cout << "Stock current value: " << text << std::endl;
+						return false;
+					}
 				}
+			} else {
+				in_intraday_price = true;
 			}
 		}
 	}
