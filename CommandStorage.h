@@ -77,7 +77,7 @@ static std::string search_string_to_link(const std::string type, const std::stri
 }
 
 static double string_to_double_value(std::string str) {
-	str.erase(std::remove(str.begin(), str.end(), ','));
+	str.erase(std::remove(str.begin(), str.end(), ','), str.end());
 	return stod(str);
 }	
 
